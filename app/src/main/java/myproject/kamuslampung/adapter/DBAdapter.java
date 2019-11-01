@@ -10,7 +10,7 @@ import com.readystatesoftware.sqliteasset.SQLiteAssetHelper;
  */
 public class DBAdapter extends SQLiteAssetHelper {
 
-    private static final String DB_NAME         = "db_kamuslampung2";
+    private static final String DB_NAME         = "db_kamuslampung2_16okt";
     private static final int   DB_VER           = 1;
     public static final String TABLE_INDO       = "kata_indo";
     public static final String TABLE_LAMPUNG    = "kata_lampung";

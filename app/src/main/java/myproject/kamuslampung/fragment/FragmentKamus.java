@@ -1,6 +1,8 @@
 package myproject.kamuslampung.fragment;
 
 
+import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -12,11 +14,13 @@ import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -33,6 +37,7 @@ import myproject.kamuslampung.R;
 import myproject.kamuslampung.activity.DetailActivity;
 import myproject.kamuslampung.activity.HomeActivity;
 import myproject.kamuslampung.adapter.DBAdapter;
+import android.content.ClipboardManager;
 
 
 /**
@@ -59,6 +64,7 @@ public class FragmentKamus extends Fragment {
     public static List<String> list_nama_lampung   = new ArrayList();
     EditText etKalimat;
     TextView txtArti;
+    Button btnTerjemah;
 
     public FragmentKamus() {
         // Required empty public constructor
@@ -78,98 +84,119 @@ public class FragmentKamus extends Fragment {
         db = mDB.getWritableDatabase();
         cursor = db.rawQuery("SELECT * FROM kata_indo",null);
         etKalimat = view.findViewById(R.id.etKalimat);
+        btnTerjemah = view.findViewById(R.id.btnTerjemah);
         txtArti = view.findViewById(R.id.txtArti);
 
         cursor.moveToFirst();
         for (int cc=0; cc < cursor.getCount(); cc++){
             cursor.moveToPosition(cc);
-            list_id.add(cursor.getString(0).toString());
-            idFilter.add(cursor.getString(0).toString());
 
-            list_nama_indo.add(cursor.getString(1).toString());
-            arrayFilter.add(cursor.getString(1).toString());
+            if (cursor.getString(1) == null || cursor.getString(1).length() == 0){
+                Log.d("getDB:","kata kosong ID  : "+cursor.getString(0));
+            }else{
+                list_id.add(cursor.getString(0).toString());
+                idFilter.add(cursor.getString(0).toString());
+
+                list_nama_indo.add(cursor.getString(1).toString());
+                arrayFilter.add(cursor.getString(1).toString());
+            }
+
         }
 
-        etKalimat.addTextChangedListener(new TextWatcher() {
+
+        btnTerjemah.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            public void onClick(View v) {
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                String kalimat  = ""+s;
-                String[] frasa  = kalimat.split(" ");
-                list_translate.clear();
-                list_translate_id.clear();
-                list_hasil_translate.clear();
-                txtArti.setText("");
-
-                //simpan frasa
-               for (int d=0;d<frasa.length;d++){
-                   list_translate.add(frasa[d].toLowerCase().toString());
-               }
-
-               //ambil iD tiap frasa
-              /* for (int c=0;c<list_nama_indo.size();c++){
-
-                   for (int d=0;d<list_translate.size();d++){
-                       String translate = list_translate.get(d);
-                       String nama_indo = list_nama_indo.get(c).toLowerCase();
-
-                       if (translate.equals(nama_indo)){
-                           String translate_id = list_id.get(c);
-                           list_translate_id.add(translate_id);
-                       }
-                   }
-               }*/
-
-                for (int d=0;d<list_translate.size();d++){
-
-                    for (int c=0;c<list_nama_indo.size();c++){
-                        String translate = list_translate.get(d);
-                        String nama_indo = list_nama_indo.get(c).toLowerCase();
-
-                        if (translate.equals(nama_indo)){
-                            String translate_id = list_id.get(c);
-                            list_translate_id.add(translate_id);
-                        }
-                    }
+                if (etKalimat.getText().toString().length() > 0){
+                    String kalimat = etKalimat.getText().toString();
+                    doTranslate(kalimat);
+                }else{
+                    Toast.makeText(getActivity(),"Anda belum menulis apapun",Toast.LENGTH_SHORT).show();
                 }
 
 
-               Log.d("tranlate id  = ",""+list_translate_id.size());
-               Log.d("list translate  = ",""+list_translate.size());
+            }
+        });
+        txtArti.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String arti = txtArti.getText().toString();
+                if (arti.equals(".") || arti == null){
 
-               //cari artinya
-
-
-               for (int a=0;a<list_translate_id.size();a++){
-                   //txtArti.append("ID = "+list_translate_id.get(a)+" \n");
-                   String idIndo = list_translate_id.get(a);
-                   String kataLampung = getArtiById(idIndo);
-                   list_hasil_translate.add(kataLampung);
-               }
-
-               //Collections.reverse(list_hasil_translate);
-               for (int b=0;b<list_hasil_translate.size();b++){
-                   txtArti.append(""+list_hasil_translate.get(b)+" ");
-               }
-
-//               for (int c=0;c< frasa.length;c++){
-//                   txtArti.append(frasa[c] + " \n");
-//               }
+                }else{
+                    ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("Kalimat bahasa Lampung", arti);
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(getActivity(),"Kalimat dicopy ke clipboard",Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
 
-
         return view;
+    }
+
+    private void doTranslate(String kalimat){
+        //String kalimat  = ""+s;
+        String[] frasa  = kalimat.split(" ");
+        list_translate.clear();
+        list_translate_id.clear();
+        list_hasil_translate.clear();
+        txtArti.setText("");
+
+        //simpan frasa
+        for (int d=0;d<frasa.length;d++){
+            list_translate.add(frasa[d].toLowerCase().toString());
+        }
+
+        Log.d("jml_frasa:",""+list_translate.size());
+        for (int d=0;d<list_translate.size();d++){
+
+            for (int c=0;c<list_nama_indo.size();c++){
+                String translate = list_translate.get(d);
+                String nama_indo = list_nama_indo.get(c).toLowerCase();
+
+                if (translate.equals(nama_indo)){
+                    String translate_id = list_id.get(c);
+                    list_translate_id.add(translate_id);
+
+                    if (isNumeric(translate)){
+                        translate = "'"+translate;
+                    }
+                    if (list_translate_id.contains(translate)){
+                        list_translate_id.remove(translate);
+                    }
+
+                    //sudahi for nya goto dext d
+                    c = list_nama_indo.size();
+
+                }else{
+
+                    if (isNumeric(translate)){
+                        translate = "'"+translate;
+                    }
+                    if (!list_translate_id.contains(translate)){
+                        list_translate_id.add(translate);
+                    }
+
+                }
+            }
+        }
+
+
+        for (int a=0;a<list_translate_id.size();a++){
+            //txtArti.append("ID = "+list_translate_id.get(a)+" \n");
+            String idIndo = list_translate_id.get(a);
+            String kataLampung = getArtiById(idIndo);
+            list_hasil_translate.add(kataLampung);
+        }
+
+        //Collections.reverse(list_hasil_translate);
+        Log.d("jml_hasil_trans:",""+list_hasil_translate.size());
+        for (int b=0;b<list_hasil_translate.size();b++){
+            txtArti.append(""+list_hasil_translate.get(b)+" ");
+        }
     }
 
     public String getArtiById(String idKata){
@@ -177,28 +204,54 @@ public class FragmentKamus extends Fragment {
         list_id_penghubung.clear();
         list_nama_lampung.clear();
         list_id_lampung.clear();
+        String hasil = "";
 
-        cursor = db.rawQuery("SELECT " +
-                "    penghubung.id_penghubung " +
-                "    , kata_indo.id_indo " +
-                "    , kata_indo.nama_indo, " +
-                " kata_lampung.id_lampung " +
-                "    , kata_lampung.nama_lampung " +
-                "FROM " +
-                "    penghubung " +
-                "    , kata_lampung " +
-                "    , kata_indo " +
-                "where kata_indo.id_indo = penghubung.id_indo and kata_lampung.id_lampung=penghubung.id_lampung  " +
-                "and kata_indo.id_indo="+idKata,null);
-        cursor.moveToFirst();
-        for (int cc=0; cc < cursor.getCount(); cc++){
-            cursor.moveToPosition(cc);
-            list_id_penghubung.add(cursor.getString(0).toString());
-            list_id_lampung.add(cursor.getString(3).toString());
-            list_nama_lampung.add(cursor.getString(4).toString());
+        if (isNumeric(idKata)){
+            cursor = db.rawQuery("SELECT " +
+                    "    penghubung.id_penghubung " +
+                    "    , kata_indo.id_indo " +
+                    "    , kata_indo.nama_indo, " +
+                    " kata_lampung.id_lampung " +
+                    "    , kata_lampung.nama_lampung " +
+                    "FROM " +
+                    "    penghubung " +
+                    "    , kata_lampung " +
+                    "    , kata_indo " +
+                    "where kata_indo.id_indo = penghubung.id_indo and kata_lampung.id_lampung=penghubung.id_lampung  " +
+                    "and kata_indo.id_indo="+idKata,null);
+            cursor.moveToFirst();
+
+            for (int cc=0; cc < cursor.getCount(); cc++){
+                cursor.moveToPosition(cc);
+                list_id_penghubung.add(cursor.getString(0).toString());
+                list_id_lampung.add(cursor.getString(3).toString());
+                list_nama_lampung.add(cursor.getString(4).toString());
+            }
+
+            hasil = list_nama_lampung.get(0).toString();
+        }else{
+            String karakterPertama = idKata.substring(0,1);
+            Log.d("karakterpertama: ",karakterPertama);
+            if (karakterPertama.equals("'")){
+                idKata = idKata.substring(1);
+                Log.d("idkatanya:",idKata);
+            }
+            hasil = idKata;
         }
 
-        return list_nama_lampung.get(0).toString();
+
+
+       // return list_nama_lampung.get(0).toString();
+        return hasil;
+    }
+
+    public static boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
     }
 
     /*public void filter(String keyword){
