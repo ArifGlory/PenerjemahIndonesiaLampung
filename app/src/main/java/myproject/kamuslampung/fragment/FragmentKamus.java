@@ -65,6 +65,7 @@ public class FragmentKamus extends Fragment {
     EditText etKalimat;
     TextView txtArti;
     Button btnTerjemah;
+    String translated_id; //ini cm buat dummy aja
 
     public FragmentKamus() {
         // Required empty public constructor
@@ -157,7 +158,12 @@ public class FragmentKamus extends Fragment {
                 String translate = list_translate.get(d);
                 String nama_indo = list_nama_indo.get(c).toLowerCase();
 
+
                 if (translate.equals(nama_indo)){
+                    //binary search
+                    int index_translate = Collections.binarySearch(list_nama_indo,translate);
+                    translated_id = list_id.get(index_translate);
+
                     String translate_id = list_id.get(c);
                     list_translate_id.add(translate_id);
 
@@ -167,10 +173,8 @@ public class FragmentKamus extends Fragment {
                     if (list_translate_id.contains(translate)){
                         list_translate_id.remove(translate);
                     }
-
                     //sudahi for nya goto dext d
                     c = list_nama_indo.size();
-
                 }else{
 
                     if (isNumeric(translate)){
@@ -179,11 +183,9 @@ public class FragmentKamus extends Fragment {
                     if (!list_translate_id.contains(translate)){
                         list_translate_id.add(translate);
                     }
-
                 }
             }
         }
-
 
         for (int a=0;a<list_translate_id.size();a++){
             //txtArti.append("ID = "+list_translate_id.get(a)+" \n");
